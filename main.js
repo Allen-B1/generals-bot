@@ -13,11 +13,11 @@ function join_game(user_id) {
 	var game_id = "test";
 	var user_id = process.env.BOT_USER_ID;
 	console.log("User id: " + user_id);
-	socket.emit("play", user_id);
+	socket.emit("join_private", "test", user_id);
 
 	// TODO: Add commands instead of this
 	socket.emit("set_force_start", game_id, true);
-//	console.log("Joined http://bot.generals.io/games/" + encodeURI(game_id));
+	console.log("Joined http://bot.generals.io/games/" + encodeURI(game_id));
 }
 
 socket.on("connect", function() {
@@ -76,7 +76,7 @@ socket.on("game_update", function(data) {
 
 		// For each adjacent tile, attack if sufficient armies
 		for(adj_tile of [tile_index + 1, tile_index - 1, tile_index + game.width, tile_index - game.width]) {
-			if(game.terrain[adj_tile] >= 0 && game.terrain[adj_tile] !== playerIndex && game.armies[adj_tile] < game.armies[tile_index] + 1) {
+			if(game.terrain[adj_tile] >= 0 && game.terrain[adj_tile] !== playerIndex && game.armies[adj_tile] + 1 < game.armies[tile_index]) {
 				socket.emit("attack", tile_index, adj_tile);
 				return;
 			}
@@ -98,7 +98,7 @@ socket.on("game_update", function(data) {
 
 		// If it has an empty tile next to it that has a nonpositive army (empty squares and cities/neutral squares with negative army), attack
 		for(adj_tile of [tile_index + 1, tile_index - 1, tile_index + game.width, tile_index - game.width]) {
-			if(game.terrain[adj_tile] === gamelib.Tile.EMPTY && (game.cities.indexOf(adj_tile) < 0 || game.armies[adj_tile] <= 0)) {
+			if(game.terrain[adj_tile] === gamelib.Tile.EMPTY && (game.armies[adj_tile] <= 10 && game.armies[adj_tile] + 1 < game.armies[tile_index])) {
 				socket.emit("attack", tile_index, adj_tile);
 				return;
 			}
