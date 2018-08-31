@@ -1,0 +1,7 @@
+class Bot {
+	
+}
+
+class JS {
+
+}
