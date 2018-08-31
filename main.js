@@ -1,23 +1,28 @@
 #!/usr/bin/env node
-const GameData = require("./game.js");
+const gamelib = require("./game.js");
 const io = require('socket.io-client');
 const socket = io('http://botws.generals.io');
 
-var game = new GameData();
+var game = new gamelib.GameData();
 socket.on("disconnect", function() {
 	console.error("Disconnected");
 	process.exit(1);
 });
-socket.on("connect", function() {
-	console.log("Connected");
+
+function join_game(user_id) {
+	var game_id = "test";
 	var user_id = process.env.BOT_USER_ID;
-	var game_id = "test_2"
 	console.log("User id: " + user_id);
 	socket.emit("join_private", game_id, user_id);
 	socket.emit("set_force_start", game_id, true);
 	console.log("Joined http://bot.generals.io/games/" + encodeURI(game_id));
-	
+}
+
+socket.on("connect", function() {
+	console.log("Connected");
+	join_game();
 });
+
 var playerIndex = -1;
 var chatroom = null;
 socket.on("game_start", function(data) {
@@ -29,37 +34,72 @@ socket.on("game_start", function(data) {
 
 socket.on("game_update", function(data) {
 	game.feed_data(data);
+	console.log("Update!");
 
+	// Find all tiles that are ours that have more than one army
+	var tiles = game.terrain.reduce((arr, tile_value, tile_index) => {
+		if(tile_value === playerIndex && game.armies[tile_index] > 1)
+			arr.push(tile_index);
+		return arr;
+	}, []);
+
+	// Tiles with an adjacent empty tile
+	var tiles_pool = tiles.slice();
+	// Find a tile with an adjacent empty tile
 	while (true) {
-		// Pick a random tile.
-		var index = Math.floor(Math.random() * game.size);
-
-		// If we own this tile, make a random move starting from it.
-		if (game.terrain[index] === playerIndex) {
-			var row = Math.floor(index / game.width);
-			var col = index % game.width;
-			var endIndex = index;
-
-			var rand = Math.random();
-			if (rand < 0.25 && col > 0) { // left
-				endIndex--;
-			} else if (rand < 0.5 && col < game.width - 1) { // right
-				endIndex++;
-			} else if (rand < 0.75 && row < game.height - 1) { // down
-				endIndex += game.width;
-			} else if (row > 0) { //up
-				endIndex -= game.width;
-			} else {
-				continue;
-			}
-
-			// Would we be attacking a city? Don't attack cities.
-			if (game.cities.indexOf(endIndex) >= 0) {
-				continue;
-			}
-
-			socket.emit('attack', index, endIndex);
+		// If there are no more tiles to choose from then finish turn
+		if(tiles_pool.length === 0) 
 			break;
+
+		// Pick a random tile.
+		var index = Math.floor(Math.random() * tiles_pool.length);
+		var tile_index = tiles_pool[index];
+		// Remove tile from possible armies next time (so that the same tile isn't chosen every single time)
+		tiles_pool.splice(index, 1);
+
+		// If it has an empty tile next to it, attack
+		if(game.terrain[tile_index + 1] === gamelib.Tile.EMPTY) {
+			socket.emit("attack", tile_index, tile_index + 1);
+			return;
+		} else if(game.terrain[tile_index - 1] === gamelib.Tile.EMPTY) {
+			socket.emit("attack", tile_index, tile_index - 1);
+			return;
+		} else if(game.terrain[tile_index + game.width] === gamelib.Tile.EMPTY) {
+			socket.emit("attack", tile_index, tile_index + game.width);
+			return;
+		} else if(game.terrain[tile_index - game.width] === gamelib.Tile.EMPTY) {
+			socket.emit("attack", tile_index, tile_index - game.width);
+			return;
+		}
+	}
+
+	console.log("No tiles left");
+
+	// Otherwise move a random army
+	var tile_index = tiles[Math.floor(Math.random() * tiles.length)];
+
+	// Pick a random direction
+	var direction = Math.floor(Math.random() * 4);
+
+	switch(direction) {
+	case 1:
+		if(game.terrain[tile_index + 1] === playerIndex) {
+			socket.emit("attack", tile_index, tile_index + 1);				
+			break;
+		}
+	case 2:
+		if(game.terrain[tile_index - 1] === playerIndex) {
+			socket.emit("attack", tile_index, tile_index - 1);
+			break;
+		}
+	case 3:
+		if(game.terrain[tile_index + game.width] === playerIndex) {
+			socket.emit("attack", tile_index, tile_index + game.width);
+			break;
+		}
+	default:
+		if(game.terrain[tile_index - game.width] === playerIndex) {
+			socket.emit("attack", tile_index, tile_index - game.width);
 		}
 	}
 });
@@ -68,6 +108,9 @@ function leave_game() {
 	socket.emit("chat_message", chatroom, "gg");
 	setTimeout(function() {
 		socket.emit("leave_game");
+		setTimeout(function() {
+			join_game();
+		}, 5000);
 	}, 1000);
 }
 socket.on("game_won", function() {

@@ -75,4 +75,10 @@ class GameData {
 	}
 }
 
-module.exports = GameData;
+module.exports.GameData = GameData;
+module.exports.Tile = {
+	EMPTY: -1,
+	MOUNTAIN: -2,
+	FOG: -3,
+	FOG_OBSTACLE: -4
+};
