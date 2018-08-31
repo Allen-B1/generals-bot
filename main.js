@@ -126,22 +126,70 @@ socket.on("game_update", function(data) {
 
 	
 
-	// Otherwise move a random army towards the general
-	var tile_index = tiles[Math.floor(Math.random() * tiles.length)];
-	var tile_col = tile_index % game.width;
-	var tile_row = Math.floor(tile_index / game.width);
-	var general = game.generals[playerIndex];
-	var general_col = general % game.width;
-	var general_row = Math.floor(general / game.width);
-	socket.emit("attack", tile_index,
+	if(game.scores[playerIndex].tiles <= 10) {
+		// Expansion needed! Move a random army
+		var tile_index = tiles[Math.floor(Math.random() * tiles.length)];
+
+		// Pick a random direction
+		var direction = Math.floor(Math.random() * 4);
+
+		switch(direction) {
+		case 1:
+			if(game.terrain[tile_index + 1] === playerIndex) {
+				socket.emit("attack", tile_index, tile_index + 1);				
+				break;
+			}
+		case 2:
+			if(game.terrain[tile_index - 1] === playerIndex) {
+				socket.emit("attack", tile_index, tile_index - 1);
+				break;
+			}
+		case 3:
+			if(game.terrain[tile_index + game.width] === playerIndex) {
+				socket.emit("attack", tile_index, tile_index + game.width);
+				break;
+			}
+		default:
+			if(game.terrain[tile_index - game.width] === playerIndex) {
+				socket.emit("attack", tile_index, tile_index - game.width);
+			}
+		}
+	} else {
+		// Move the highest-valued tile towards the general
+		var tile_index = tiles.reduce((acc, tile) => {
+			if(game.armies[tile] > (game.armies[acc] | 0) && tile !== game.generals[playerIndex])
+				return tile;
+			else
+				return acc;
+		}, -1);
+		console.log(game.armies[tile_index]);
+		var tile_col = tile_index % game.width;
+		var tile_row = Math.floor(tile_index / game.width);
+		var general = game.generals[playerIndex];
+		var general_col = general % game.width;
+		var general_row = Math.floor(general / game.width);
 		// Is the difference in row or col greater?
-		Math.abs(general_col - tile_col) > Math.abs(general_row - tile_row) ? 
-		// If col, move left or right
-		tile_index + Math.sign(general_col - tile_col):
-		// If row, move up if general is higher or down is general is lower
-		tile_index + Math.sign(general_row - tile_row) * game.width
-	);
-	console.log(game.scores);
+
+		var colEndIndex = tile_index + (Math.sign(general_col - tile_col) || 1);
+		var rowEndIndex = tile_index + (Math.sign(general_row - tile_row) || 1) * game.width;
+		var endIndex = Math.abs(general_col - tile_col) > Math.abs(general_row - tile_row) ? 
+			// If col, move left or right
+			colEndIndex:
+			// If row, move up if general is higher or down is general is lower
+			rowEndIndex;
+
+		if(game.terrain[colEndIndex] === gamelib.Tile.MOUNTAIN) {
+			endIndex = rowEndIndex;
+		}
+		if(game.terrain[rowEndIndex] === gamelib.Tile.MOUNTAIN) {
+			endIndex = colEndIndex;
+		}
+
+
+		socket.emit("attack", tile_index,
+			endIndex
+		);
+	}
 });
 
 function leave_game() {	
