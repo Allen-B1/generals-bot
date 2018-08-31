@@ -14,6 +14,8 @@ function join_game(user_id) {
 	var user_id = process.env.BOT_USER_ID;
 	console.log("User id: " + user_id);
 	socket.emit("join_private", game_id, user_id);
+
+	// TODO: Add commands instead of this
 	socket.emit("set_force_start", game_id, true);
 	console.log("Joined http://bot.generals.io/games/" + encodeURI(game_id));
 }
@@ -57,6 +59,7 @@ socket.on("game_update", function(data) {
 		// Remove tile from possible armies next time (so that the same tile isn't chosen every single time)
 		tiles_pool.splice(index, 1);
 
+		// TODO: Check for cities
 		// If it has an empty tile next to it, attack
 		if(game.terrain[tile_index + 1] === gamelib.Tile.EMPTY) {
 			socket.emit("attack", tile_index, tile_index + 1);
