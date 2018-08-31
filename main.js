@@ -2,6 +2,7 @@
 const gamelib = require("./game.js");
 const io = require('socket.io-client');
 const socket = io('http://botws.generals.io');
+const getopt = require("posix-getopt");
 
 var game = new gamelib.GameData();
 socket.on("disconnect", function() {
@@ -9,15 +10,31 @@ socket.on("disconnect", function() {
 	process.exit(1);
 });
 
-function join_game(user_id) {
-	var game_id = "test";
-	var user_id = process.env.BOT_USER_ID;
-	console.log("User id: " + user_id);
-	socket.emit("join_private", "test", user_id);
+var parser = new getopt.BasicParser('c:', process.argv);
+function join_game() {
+	var gameId = null;
 
-	// TODO: Add commands instead of this
-	socket.emit("set_force_start", game_id, true);
-	console.log("Joined http://bot.generals.io/games/" + encodeURI(game_id));
+	var option;
+	while((option = parser.getopt()) != undefined) {
+		switch(option.option) {
+		case 'c':
+			gameId = option.optarg;
+			break;
+		}
+	}
+
+	var userId = process.env.BOT_USER_ID;
+	console.log("User id: " + userId);
+
+	if(gameId === null) {
+		socket.emit("play", userId);
+		console.log("Joined FFA queue in https://bot.generals.io/");		
+	} else {
+		socket.emit("join_private", gameId, userId);
+		// TODO: Add commands instead of this
+		socket.emit("set_force_start", gameId, true);
+		console.log("Joined http://bot.generals.io/games/" + encodeURI(gameId));
+	}
 }
 
 socket.on("connect", function() {
