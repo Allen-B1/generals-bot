@@ -47,7 +47,6 @@ socket.on("chat_message", function(chat_room, data) {
 
 socket.on("game_update", function(data) {
 	game.feed_data(data);
-	console.log("Update!");
 
 	// Find all tiles that are ours that have more than one army
 	var tiles = game.terrain.reduce((arr, tile_value, tile_index) => {
@@ -78,7 +77,6 @@ socket.on("game_update", function(data) {
 		// For each adjacent tile, attack if sufficient armies
 		for(adj_tile of [tile_index + 1, tile_index - 1, tile_index + game.width, tile_index - game.width]) {
 			if(game.terrain[adj_tile] >= 0 && game.terrain[adj_tile] !== playerIndex && game.armies[adj_tile] < game.armies[tile_index] + 1) {
-				console.log("Attacking opponent!")
 				socket.emit("attack", tile_index, adj_tile);
 				return;
 			}
@@ -106,8 +104,6 @@ socket.on("game_update", function(data) {
 			}
 		}
 	}
-
-	console.log("No tiles left");
 
 	// Otherwise move a random army
 	var tile_index = tiles[Math.floor(Math.random() * tiles.length)];
