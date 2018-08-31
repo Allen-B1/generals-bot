@@ -61,6 +61,9 @@ socket.on("chat_message", function(chat_room, data) {
 		}
 		times++;
 	}
+	if(data.text.toLowerCase().indexOf("surrender") === 0) {
+		socket.emit("chat_message", chat_room, "no");
+	}
 });
 
 socket.on("game_update", function(data) {
@@ -155,40 +158,37 @@ socket.on("game_update", function(data) {
 			}
 		}
 	} else {
-		// Move the highest-valued tile towards the general
+		// Move the highest-valued tile towards the general, or -1
 		var tile_index = tiles.reduce((acc, tile) => {
 			if(game.armies[tile] > (game.armies[acc] | 0) && tile !== game.generals[playerIndex])
 				return tile;
 			else
 				return acc;
 		}, -1);
-		console.log(game.armies[tile_index]);
+
+		if(tile_index === -1)
+			return;
+
+		//console.log(game.armies[tile_index]);
 		var tile_col = tile_index % game.width;
 		var tile_row = Math.floor(tile_index / game.width);
 		var general = game.generals[playerIndex];
 		var general_col = general % game.width;
 		var general_row = Math.floor(general / game.width);
 		// Is the difference in row or col greater?
-
-		var colEndIndex = tile_index + (Math.sign(general_col - tile_col) || 1);
-		var rowEndIndex = tile_index + (Math.sign(general_row - tile_row) || 1) * game.width;
 		var endIndex = Math.abs(general_col - tile_col) > Math.abs(general_row - tile_row) ? 
 			// If col, move left or right
-			colEndIndex:
-			// If row, move up if general is higher or down is general is lower
-			rowEndIndex;
+			tile_index + Math.sign(general_col - tile_col):
+			// If row, move up or down
+			tile_index + Math.sign(general_row - tile_row)  * game.width;
 
-		if(game.terrain[colEndIndex] === gamelib.Tile.MOUNTAIN) {
-			endIndex = rowEndIndex;
-		}
-		if(game.terrain[rowEndIndex] === gamelib.Tile.MOUNTAIN) {
-			endIndex = colEndIndex;
+		if(game.terrain[endIndex] === gamelib.Tile.MOUNTAIN) {
+			//TODO: Replace
+			endIndex = tile_index + Math.round(Math.random());
 		}
 
 
-		socket.emit("attack", tile_index,
-			endIndex
-		);
+		socket.emit("attack", tile_index, endIndex);
 	}
 });
 
