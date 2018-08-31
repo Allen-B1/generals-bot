@@ -3,6 +3,7 @@ class GameData {
 		this.map = []
 		this.cities = []
 		this.generals = []
+		this.scores = []
 	}
 	/** Feeds data.generals to the game */
 	feed_generals_data(generals) {
@@ -34,6 +35,7 @@ class GameData {
 		this.feed_generals_data(data.generals);
 		this.feed_map_data(data.map_diff);
 		this.feed_cities_data(data.cities_diff);
+		this.scores = data.scores;
 	}
 
 	/** Patching function. Taken from http://dev.generals.io/api#tutorial */

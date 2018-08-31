@@ -4,15 +4,14 @@ const io = require('socket.io-client');
 const socket = io('http://botws.generals.io');
 const getopt = require("posix-getopt");
 
-var game = new gamelib.GameData();
 socket.on("disconnect", function() {
 	console.error("Disconnected");
 	process.exit(1);
 });
 
-var parser = new getopt.BasicParser('c:', process.argv);
 function join_game() {
 	var gameId = null;
+	var parser = new getopt.BasicParser('c:', process.argv);
 
 	var option;
 	while((option = parser.getopt()) != undefined) {
@@ -44,6 +43,8 @@ socket.on("connect", function() {
 
 var playerIndex = -1;
 var chatroom = null;
+
+var game = new gamelib.GameData();
 socket.on("game_start", function(data) {
 	playerIndex = data.playerIndex;
 	chatroom = data.chat_room;
@@ -81,6 +82,7 @@ socket.on("game_update", function(data) {
 		}
 	});
 
+	/* Attack enemy if possible */
 	while(true) {
 		// If there are no tiles left break
 		if(tiles_w_enemy.length === 0) break;
@@ -102,7 +104,7 @@ socket.on("game_update", function(data) {
 
 	// Tiles with an adjacent empty tile
 	var tiles_pool = tiles.slice();
-	// Find a tile with an adjacent empty tile
+	/* Attack empty tile if possible */
 	while (true) {
 		// If there are no more tiles to choose from then break
 		if(tiles_pool.length === 0) break;
@@ -122,33 +124,23 @@ socket.on("game_update", function(data) {
 		}
 	}
 
-	// Otherwise move a random army
+	
+
+	// Otherwise move a random army towards the general
 	var tile_index = tiles[Math.floor(Math.random() * tiles.length)];
-
-	// Pick a random direction
-	var direction = Math.floor(Math.random() * 4);
-
-	switch(direction) {
-	case 1:
-		if(game.terrain[tile_index + 1] === playerIndex) {
-			socket.emit("attack", tile_index, tile_index + 1);				
-			break;
-		}
-	case 2:
-		if(game.terrain[tile_index - 1] === playerIndex) {
-			socket.emit("attack", tile_index, tile_index - 1);
-			break;
-		}
-	case 3:
-		if(game.terrain[tile_index + game.width] === playerIndex) {
-			socket.emit("attack", tile_index, tile_index + game.width);
-			break;
-		}
-	default:
-		if(game.terrain[tile_index - game.width] === playerIndex) {
-			socket.emit("attack", tile_index, tile_index - game.width);
-		}
-	}
+	var tile_col = tile_index % game.width;
+	var tile_row = Math.floor(tile_index / game.width);
+	var general = game.generals[playerIndex];
+	var general_col = general % game.width;
+	var general_row = Math.floor(general / game.width);
+	socket.emit("attack", tile_index,
+		// Is the difference in row or col greater?
+		Math.abs(general_col - tile_col) > Math.abs(general_row - tile_row) ? 
+		// If col, move left or right
+		tile_index + Math.sign(general_col - tile_col):
+		// If row, move up if general is higher or down is general is lower
+		tile_index + Math.sign(general_row - tile_row) * game.width
+	);
 });
 
 function leave_game() {	
