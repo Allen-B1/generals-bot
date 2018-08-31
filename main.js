@@ -138,15 +138,15 @@ function leave_game() {
 	socket.emit("chat_message", chatroom, "gg");
 	setTimeout(function() {
 		socket.emit("leave_game");
-		setTimeout(function() {
-			join_game();
-		}, 5000);
-	}, 1000);
+		join_game();
+	}, 2000);
 }
 socket.on("game_won", function() {
+	console.log("Game won!");
 	leave_game();
 });
 
 socket.on("game_lost", function() {
+	console.log("Game lost. :(");
 	leave_game();
 });
