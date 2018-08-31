@@ -13,12 +13,12 @@ function join_game(user_id) {
 	var game_id = "test";
 	var user_id = process.env.BOT_USER_ID;
 	console.log("User id: " + user_id);
-	socket.emit("join_private", game_id, user_id);
+	socket.emit("play", user_id);
 
 	// TODO: Add commands instead of this
 	// TODO: When a player says hi 1st time return "hi", 2nd time "hello", 3rd time nothing
 	socket.emit("set_force_start", game_id, true);
-	console.log("Joined http://bot.generals.io/games/" + encodeURI(game_id));
+//	console.log("Joined http://bot.generals.io/games/" + encodeURI(game_id));
 }
 
 socket.on("connect", function() {
