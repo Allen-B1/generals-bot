@@ -65,9 +65,9 @@ socket.on("game_update", function(data) {
 		// Remove tile from possible armies next time (so that the same tile isn't chosen every single time)
 		tiles_w_enemy.splice(index, 1);
 
-		// For each adjacent tile, attack
+		// For each adjacent tile, attack if sufficient armies
 		for(adj_tile of [tile_index + 1, tile_index - 1, tile_index + game.width, tile_index - game.width]) {
-			if(game.terrain[adj_tile] >= 0 && game.terrain[adj_tile] !== playerIndex && game.armies[adj_tile] < game.armies[tile_index]) {
+			if(game.terrain[adj_tile] >= 0 && game.terrain[adj_tile] !== playerIndex && game.armies[adj_tile] < game.armies[tile_index] + 1) {
 				console.log("Attacking opponent!")
 				socket.emit("attack", tile_index, adj_tile);
 				return;
