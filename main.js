@@ -141,6 +141,7 @@ socket.on("game_update", function(data) {
 		// If row, move up if general is higher or down is general is lower
 		tile_index + Math.sign(general_row - tile_row) * game.width
 	);
+	console.log(game.scores);
 });
 
 function leave_game() {	
