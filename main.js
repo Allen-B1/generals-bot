@@ -16,7 +16,6 @@ function join_game(user_id) {
 	socket.emit("play", user_id);
 
 	// TODO: Add commands instead of this
-	// TODO: When a player says hi 1st time return "hi", 2nd time "hello", 3rd time nothing
 	socket.emit("set_force_start", game_id, true);
 //	console.log("Joined http://bot.generals.io/games/" + encodeURI(game_id));
 }
@@ -33,6 +32,17 @@ socket.on("game_start", function(data) {
 	chatroom = data.chat_room;
 	var replay_url = 'http://bot.generals.io/replays/' + encodeURIComponent(data.replay_id);
 	console.log('Game starting! Replay: ' + replay_url)
+});
+
+var times = 0; // number of times "hi" was said
+socket.on("chat_message", function(chat_room, data) {
+	if(data.playerIndex !== playerIndex && (data.text.toLowerCase() === "hi" || data.text.toLowerCase() === "hello")) {
+		// if this is the first or second time
+		if(times < 2) {
+			socket.emit("chat_message", chat_room, (times === 0 ? "hi" : "hello"));
+		}
+		times++;
+	}
 });
 
 socket.on("game_update", function(data) {
@@ -90,7 +100,7 @@ socket.on("game_update", function(data) {
 
 		// If it has an empty tile next to it that has a nonpositive army (empty squares and cities/neutral squares with negative army), attack
 		for(adj_tile of [tile_index + 1, tile_index - 1, tile_index + game.width, tile_index - game.width]) {
-			if(game.terrain[adj_tile] === gamelib.Tile.EMPTY && (game.cities.indexOf(adj_tile) < 0 || game.armies[adj_tile] < 0)) {
+			if(game.terrain[adj_tile] === gamelib.Tile.EMPTY && (game.cities.indexOf(adj_tile) < 0 || game.armies[adj_tile] <= 0)) {
 				socket.emit("attack", tile_index, adj_tile);
 				return;
 			}
