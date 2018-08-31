@@ -17,11 +17,11 @@ class GameData {
 	}
 	/** Feeds data.map_diff to the game */
 	feed_map_data(map_diff) {
-		this.map = Game.patch(this.map, map_diff)
+		this.map = GameData.patch(this.map, map_diff)
 	}
 	/** Feeds data.cities_diff to the game */
 	feed_cities_data(cities_diff) {
-		this.cities = Game.patch(this.cities, cities_diff)
+		this.cities = GameData.patch(this.cities, cities_diff)
 	}
 	/** Convenience function. Calls
 
@@ -52,6 +52,26 @@ class GameData {
 			i++;
 		}
 		return out;
+	}
+
+	get width() {
+		return this.map[0];
+	}
+
+	get height() {
+		return this.map[1];
+	}
+
+	get size() {
+		return this.width * this.height;
+	}
+
+	get armies() {
+		return this.map.slice(2, this.size + 2);
+	}
+
+	get terrain() {
+		return this.map.slice(this.size + 2, this.size + this.size + 2)
 	}
 }
 
